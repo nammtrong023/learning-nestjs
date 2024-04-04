@@ -6,7 +6,6 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
-import { UserRepository } from 'src/users/repositories/user.repository';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload, Tokens } from 'types';
 import { InjectModel } from '@nestjs/mongoose';
@@ -17,7 +16,6 @@ import { LoginDto } from './dto/login.dto';
 @Injectable()
 export class AuthService {
   constructor(
-    private userRepository: UserRepository,
     @InjectModel(User.name)
     private userModel: Model<User>,
     private jwtService: JwtService,
@@ -35,12 +33,10 @@ export class AuthService {
       }
 
       const hashedPassword = await hash(createDto.password, 10);
-      const newUser = new this.userModel({
+      new this.userModel({
         ...createDto,
         password: hashedPassword,
       });
-
-      return newUser.save();
     } catch (error) {
       console.log(error);
       throw new HttpException('Internal server', 500);
