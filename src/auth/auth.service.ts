@@ -1,13 +1,14 @@
 import {
   HttpException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
 import { RegisterDto } from './dto/register.dto';
-import { JwtPayload, Tokens } from 'types';
+import { JwtPayload, Tokens } from 'src/types';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from 'src/users/schema/user.schema';
@@ -23,24 +24,20 @@ export class AuthService {
   ) {}
 
   async signup(createDto: RegisterDto) {
-    try {
-      const user = await this.userModel.findOne({
-        email: createDto.email,
-      });
+    const user = await this.userModel.findOne({
+      email: createDto.email,
+    });
 
-      if (user) {
-        throw new HttpException('This email has been used.', 400);
-      }
-
-      const hashedPassword = await hash(createDto.password, 10);
-      new this.userModel({
-        ...createDto,
-        password: hashedPassword,
-      });
-    } catch (error) {
-      console.log(error);
-      throw new HttpException('Internal server', 500);
+    if (user) {
+      throw new HttpException('This email has been used.', 400);
     }
+
+    const hashedPassword = await hash(createDto.password, 10);
+    const newUser = new this.userModel({
+      ...createDto,
+      password: hashedPassword,
+    });
+    newUser.save();
   }
 
   async login(data: LoginDto): Promise<Tokens> {
@@ -48,7 +45,7 @@ export class AuthService {
       email: data.email,
     });
     if (!user) {
-      throw new UnauthorizedException('User not found with this email');
+      throw new NotFoundException('User not found with this email');
     }
 
     const verify = await compare(data.password, user.password);
@@ -57,15 +54,19 @@ export class AuthService {
     }
 
     const tokens = await this.generateTokens(user.id, user.email);
+    await user.updateOne({ refreshToken: tokens.refreshToken }, { new: true });
     return tokens;
   }
 
-  async refreshTokens(userId: string, refreshToken: string): Promise<Tokens> {
+  async refreshToken(userId: string, refreshToken: string): Promise<Tokens> {
     const user = await this.userModel.findOne({ _id: userId });
 
     if (!user || !user.refreshToken) throw new UnauthorizedException();
 
-    const rtMatches = await compare(refreshToken, user.refreshToken);
+    const rtMatches = await compare(user.refreshToken, refreshToken);
+    console.log(refreshToken);
+    console.log(user.refreshToken);
+    console.log(rtMatches);
     if (!rtMatches) throw new UnauthorizedException('Invalid token');
 
     const jwtPayload = {

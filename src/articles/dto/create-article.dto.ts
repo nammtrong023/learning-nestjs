@@ -1,4 +1,5 @@
 import { ArrayMinSize, IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { IsObjectId } from 'nestjs-object-id';
 export class CreateArticleDto {
   @IsString()
   @IsNotEmpty()
@@ -8,13 +9,9 @@ export class CreateArticleDto {
   @IsNotEmpty()
   content: string;
 
-  @IsString()
-  @IsNotEmpty()
-  userId: string;
-
   @IsArray()
   @IsNotEmpty()
-  @IsString({ each: true })
+  @IsObjectId({ each: true })
   @ArrayMinSize(1)
   categoryIds: string[];
 }

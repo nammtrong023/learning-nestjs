@@ -10,6 +10,7 @@ import { Article } from './schema/article.schema';
 import { Model } from 'mongoose';
 import { User } from 'src/users/schema/user.schema';
 import { Category } from 'src/categories/schema/category.schema';
+import { PaginationRequest, PaginationResponse } from 'src/types';
 
 @Injectable()
 export class ArticlesService {
@@ -19,7 +20,10 @@ export class ArticlesService {
     @InjectModel(Category.name) private categoryModel: Model<Category>,
   ) {}
 
-  async create({ userId, categoryIds, ...createArticleDto }: CreateArticleDto) {
+  async create(
+    userId: string,
+    { categoryIds, ...createArticleDto }: CreateArticleDto,
+  ) {
     if (!categoryIds) throw new BadRequestException('CategoryIds is required');
 
     const user = await this.userModel.findById(userId);
@@ -50,44 +54,83 @@ export class ArticlesService {
         },
       },
     );
-    return savedArticle.populate(['categories']);
+    return savedArticle.populate({
+      path: 'categories',
+      select: 'name',
+    });
   }
 
-  async findAll() {
-    return await this.articleModel.find().populate(['user', 'categories']);
+  async findAll(
+    pagination: PaginationRequest,
+  ): Promise<PaginationResponse<Article>> {
+    const { limit, page, search, sort } = pagination;
+    const skip = (page - 1) * limit;
+
+    const query = search
+      ? {
+          $or: [
+            { title: { $regex: search, $options: 'i' } },
+            { content: { $regex: search, $options: 'i' } },
+          ],
+        }
+      : {};
+    const [articles, totalCount] = await Promise.all([
+      this.articleModel
+        .find({ ...query })
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: sort || 'desc' })
+        .populate([
+          { path: 'user', select: 'username email' },
+          {
+            path: 'categories',
+            select: 'name',
+          },
+        ]),
+      this.articleModel.countDocuments(),
+    ]);
+
+    const totalPage = Math.ceil(totalCount / limit);
+    // const data = ArticleResponseDto.fromArticles(articles);
+
+    return {
+      data: articles,
+      meta: { limit, page, totalPage },
+    };
   }
 
   async findOne(id: string) {
-    const article = await this.articleModel
-      .findById(id)
-      .populate(['categories']);
+    const article = await this.articleModel.findById(id).populate({
+      path: 'categories',
+      select: 'name',
+    });
 
     if (!article) throw new BadRequestException(`Article not found: ${id}`);
     return article;
   }
 
-  async update(id: string, updateArticleDto: UpdateArticleDto) {
-    if (!updateArticleDto.categoryIds)
+  async update(id: string, userId: string, updateArticleDto: UpdateArticleDto) {
+    if (!updateArticleDto.categoryIds) {
       throw new BadRequestException('CategoryIds is required');
-
+    }
     await this.getAndFilterCategories(updateArticleDto.categoryIds);
 
-    const owner = await this.userModel.findById(updateArticleDto.userId);
+    const article = await this.articleModel.findById(id);
+    if (!article) throw new BadRequestException(`Article not found: ${id}`);
+
+    const owner = await this.userModel.findById(userId);
     if (!owner) throw new ForbiddenException('Do not have permission');
 
-    const article = await this.articleModel
-      .findByIdAndUpdate(id, updateArticleDto, {
-        new: true,
-      })
-      .populate(['categories']);
-
-    if (!article) throw new BadRequestException(`Article not found: ${id}`);
-    return article;
+    return await article.updateOne(updateArticleDto, { new: true }).populate({
+      path: 'categories',
+      select: 'name',
+    });
   }
 
-  async remove(id: string) {
-    // const owner = this.userModel.findById(updateArticleDto.userId);
-    // if (!owner) throw new ForbiddenException('Do not have permission');
+  async remove(id: string, userId: string) {
+    const owner = this.userModel.findById(userId);
+    if (!owner) throw new ForbiddenException('Do not have permission');
+
     const article = await this.articleModel.findByIdAndDelete(id);
     if (!article) throw new BadRequestException(`Article not found: ${id}`);
   }

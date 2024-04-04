@@ -17,18 +17,18 @@ export type JwtPayloadWithRtToken = JwtPayload & { refreshToken: string };
 export type JwtPayloadWithAtToken = JwtPayload & { accessToken: string };
 export type JwtPayloadWithTokens = JwtPayload & Tokens;
 
-export type FilterType = {
-  itemsPerPage?: number;
+export type PaginationRequest = {
+  limit?: number;
   page?: number;
   search?: string;
+  sort?: 'asc' | 'desc';
 };
 
-type PaginationType = {
-  total: number;
-  currentPage?: number;
-  itemsPerPage?: number;
-};
-
-export type DataPaginationType<T> = PaginationType & {
+export type PaginationResponse<T> = {
   data: T[];
+  meta: {
+    limit?: number;
+    page?: number;
+    totalPage: number;
+  };
 };

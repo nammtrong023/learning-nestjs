@@ -4,13 +4,13 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { GetCurrentUser } from 'src/common/decorator/get-current-user';
 import { GetCurrentUserId } from 'src/common/decorator/get-current-user-id';
 import { Public } from 'src/common/decorator/public.decorator';
 import { RtGuard } from 'src/common/guard/rt.guard';
-import { Tokens } from 'types';
+import { Tokens } from 'src/types';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -41,7 +41,7 @@ export class AuthController {
     @GetCurrentUserId() userId: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
   ): Promise<Tokens> {
-    return this.authService.refreshTokens(userId, refreshToken);
+    return this.authService.refreshToken(userId, refreshToken);
   }
 
   // @Public()
