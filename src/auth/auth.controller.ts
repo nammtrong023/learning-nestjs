@@ -22,7 +22,7 @@ export class AuthController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  register(@Body() body: RegisterDto): Promise<void> {
+  register(@Body() body: RegisterDto) {
     return this.authService.signup(body);
   }
 
@@ -43,11 +43,4 @@ export class AuthController {
   ): Promise<Tokens> {
     return this.authService.refreshToken(userId, refreshToken);
   }
-
-  // @Public()
-  // @Post('reset-password')
-  // @HttpCode(HttpStatus.OK)
-  // resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<Tokens> {
-  //   return this.authService.resetPassword(resetPasswordDto);
-  // }
 }

@@ -1,18 +1,18 @@
 import {
   HttpException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
 import { RegisterDto } from './dto/register.dto';
-import { JwtPayload, Tokens } from 'src/types';
+import { Tokens } from 'src/types';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from 'src/users/schema/user.schema';
 import { LoginDto } from './dto/login.dto';
+import { DataNotFoundException } from 'src/exception/data-not-found';
 
 @Injectable()
 export class AuthService {
@@ -38,6 +38,7 @@ export class AuthService {
       password: hashedPassword,
     });
     newUser.save();
+    return new HttpException('User created successfully', 201);
   }
 
   async login(data: LoginDto): Promise<Tokens> {
@@ -45,7 +46,7 @@ export class AuthService {
       email: data.email,
     });
     if (!user) {
-      throw new NotFoundException('User not found with this email');
+      throw new DataNotFoundException('User', 'email', data.email);
     }
 
     const verify = await compare(data.password, user.password);
@@ -54,47 +55,50 @@ export class AuthService {
     }
 
     const tokens = await this.generateTokens(user.id, user.email);
-    await user.updateOne({ refreshToken: tokens.refreshToken }, { new: true });
+    await this.updateRtToken(user.id, tokens.refreshToken);
     return tokens;
   }
 
   async refreshToken(userId: string, refreshToken: string): Promise<Tokens> {
-    const user = await this.userModel.findOne({ _id: userId });
-
+    const user = await this.userModel.findById(userId);
     if (!user || !user.refreshToken) throw new UnauthorizedException();
 
-    const rtMatches = await compare(user.refreshToken, refreshToken);
-    console.log(refreshToken);
-    console.log(user.refreshToken);
-    console.log(rtMatches);
+    const rtMatches = await compare(refreshToken, user.refreshToken);
     if (!rtMatches) throw new UnauthorizedException('Invalid token');
 
-    const jwtPayload = {
-      id: user.id,
-      email: user.email,
-    };
-    const accessToken = await this.generateAtTokens(jwtPayload);
-    return { accessToken, refreshToken };
+    const tokens = await this.generateTokens(user.id, user.email);
+    await this.updateRtToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 
-  async generateAtTokens(jwtPayload: JwtPayload) {
-    return await this.jwtService.signAsync(jwtPayload, {
-      secret: this.config.get<string>('AT_SECRET'),
-      expiresIn: this.config.get<string>('EXP_AT'),
-    });
-  }
+  async updateRtToken(userId: string, refreshToken: string): Promise<void> {
+    const hashedRtToken = await hash(refreshToken, 10);
 
+    await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        refreshToken: hashedRtToken,
+      },
+      { new: true },
+    );
+  }
   async generateTokens(userId: string, email: string): Promise<Tokens> {
     const jwtPayload = {
       id: userId,
       email,
     };
 
-    const accessToken = await this.generateAtTokens(jwtPayload);
-    const refreshToken = await this.jwtService.signAsync(jwtPayload, {
-      secret: this.config.get<string>('RT_SECRET'),
-      expiresIn: this.config.get<string>('EXP_RT'),
-    });
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(jwtPayload, {
+        secret: this.config.get<string>('AT_SECRET'),
+        expiresIn: this.config.get<string>('EXP_AT'),
+      }),
+
+      this.jwtService.signAsync(jwtPayload, {
+        secret: this.config.get<string>('RT_SECRET'),
+        expiresIn: this.config.get<string>('EXP_RT'),
+      }),
+    ]);
 
     return { accessToken, refreshToken };
   }

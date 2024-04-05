@@ -10,6 +10,8 @@ import {
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { Pagination } from 'src/common/decorator/pagination';
+import { PaginationRequest } from 'src/common/validator/pagination-request';
 
 @Controller('categories')
 export class CategoriesController {
@@ -21,8 +23,8 @@ export class CategoriesController {
   }
 
   @Get()
-  findAll() {
-    return this.categoriesService.findAll();
+  findAll(@Pagination() pagination: PaginationRequest) {
+    return this.categoriesService.findAll(pagination);
   }
 
   @Get(':id')

@@ -31,6 +31,22 @@ export class ArticlesController {
     return this.articlesService.findAll(pagination);
   }
 
+  @Get('categories/:categoryId')
+  findByCategory(
+    @Param('categoryId') categoryId: string,
+    @Pagination() pagination: PaginationRequest,
+  ) {
+    return this.articlesService.findByCategoryId(categoryId, pagination);
+  }
+
+  @Get('users/:userId')
+  findByUserId(
+    @Param('userId') userId: string,
+    @Pagination() pagination: PaginationRequest,
+  ) {
+    return this.articlesService.findByUserId(userId, pagination);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.articlesService.findOne(id);
