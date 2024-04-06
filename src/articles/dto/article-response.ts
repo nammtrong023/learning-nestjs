@@ -1,5 +1,5 @@
 import { IsArray, IsNotEmpty, IsString } from 'class-validator';
-import { UserResponseDto } from 'src/users/dto/responses/user-response.dto';
+import { UserResponseDto } from 'src/users/dto/user-response.dto';
 import { Article } from '../schema/article.schema';
 import { Category } from 'src/categories/schema/category.schema';
 
@@ -20,15 +20,11 @@ export class ArticleResponseDto {
   categoryIds: Category[];
 
   static fromArticle(article: Article): ArticleResponseDto {
-    const articleResponseDto = new ArticleResponseDto();
-    articleResponseDto.title = article.title;
-    articleResponseDto.content = article.content;
-    articleResponseDto.user = article.user;
-    articleResponseDto.categoryIds = article.categories;
-    return articleResponseDto;
-  }
-
-  static fromArticles(articles: Article[]): ArticleResponseDto[] {
-    return articles.map((article) => this.fromArticle(article));
+    return {
+      title: article.title,
+      content: article.content,
+      user: article.user,
+      categoryIds: article.categories,
+    };
   }
 }

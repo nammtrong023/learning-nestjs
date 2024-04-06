@@ -1,37 +1,32 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Article } from './schema/article.schema';
 import { Model } from 'mongoose';
-import { User } from 'src/users/schema/user.schema';
-import { Category } from 'src/categories/schema/category.schema';
 import { PaginationRequest, PaginationResponse } from 'src/types';
 import { DataNotFoundException } from 'src/exception/data-not-found';
+import { UsersService } from 'src/users/users.service';
+import { CategoriesService } from 'src/categories/categories.service';
 
 @Injectable()
 export class ArticlesService {
   constructor(
     @InjectModel(Article.name) private articleModel: Model<Article>,
-    @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(Category.name) private categoryModel: Model<Category>,
+    private userSerive: UsersService,
+    private categoriesService: CategoriesService,
   ) {}
 
   async create(
     userId: string,
     { categoryIds, ...createArticleDto }: CreateArticleDto,
-  ) {
+  ): Promise<Article> {
     if (!categoryIds) throw new BadRequestException('CategoryIds is required');
 
-    const user = await this.userModel.findById(userId);
+    const user = await this.userSerive.findUserDocument(userId);
     if (!user) throw new DataNotFoundException('User', 'id', userId);
 
-    this.getAndFilterCategories(categoryIds);
-
+    this.categoriesService.filterCategoryIds(categoryIds);
     const newArticle = new this.articleModel({
       ...createArticleDto,
       user: userId,
@@ -45,16 +40,7 @@ export class ArticlesService {
       },
     });
 
-    await this.categoryModel.updateMany(
-      {
-        _id: { $in: categoryIds },
-      },
-      {
-        $push: {
-          article: savedArticle._id,
-        },
-      },
-    );
+    await this.categoriesService.updateMany(savedArticle.id, categoryIds);
     return savedArticle.populate({
       path: 'categories',
       select: 'name',
@@ -76,24 +62,26 @@ export class ArticlesService {
     return await this.articlePagination(pagination, query);
   }
 
-  async findByCategoryId(categoryId: string, pagination: PaginationRequest) {
-    const category = await this.categoryModel.findById(categoryId);
-    if (!category)
-      throw new DataNotFoundException('Category', 'id', categoryId);
-    
+  async findByCategoryId(
+    categoryId: string,
+    pagination: PaginationRequest,
+  ): Promise<PaginationResponse<Article>> {
+    await this.categoriesService.findOne(categoryId);
     const query = { categories: categoryId };
     return await this.articlePagination(pagination, query);
   }
 
-  async findByUserId(userId: string, pagination: PaginationRequest) {
-    const user = await this.userModel.findById(userId);
-    if (!user) throw new DataNotFoundException('User', 'id', userId);
+  async findByUserId(
+    userId: string,
+    pagination: PaginationRequest,
+  ): Promise<PaginationResponse<Article>> {
+    await this.userSerive.findOne(userId);
 
     const query = { user: userId };
     return await this.articlePagination(pagination, query);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<Article> {
     const article = await this.articleModel.findById(id).populate({
       path: 'categories',
       select: 'name',
@@ -103,27 +91,32 @@ export class ArticlesService {
     return article;
   }
 
-  async update(id: string, userId: string, updateArticleDto: UpdateArticleDto) {
+  async update(
+    id: string,
+    userId: string,
+    updateArticleDto: UpdateArticleDto,
+  ): Promise<Article> {
     if (!updateArticleDto.categoryIds) {
       throw new BadRequestException('CategoryIds is required');
     }
-    await this.getAndFilterCategories(updateArticleDto.categoryIds);
+    await this.categoriesService.filterCategoryIds(
+      updateArticleDto.categoryIds,
+    );
 
     const article = await this.articleModel.findById(id);
     if (!article) throw new DataNotFoundException('Article', 'id', id);
 
-    const owner = await this.userModel.findById(userId);
-    if (!owner) throw new ForbiddenException('Do not have permission');
-
-    return await article.updateOne(updateArticleDto, { new: true }).populate({
+    await this.userSerive.findOne(userId);
+    await article.updateOne(updateArticleDto, { new: true }).populate({
       path: 'categories',
       select: 'name',
     });
+
+    return article;
   }
 
   async remove(id: string, userId: string) {
-    const owner = this.userModel.findById(userId);
-    if (!owner) throw new ForbiddenException('Do not have permission');
+    await this.userSerive.findOne(userId);
 
     const article = await this.articleModel.findByIdAndDelete(id);
     if (!article) throw new BadRequestException(`Article not found: ${id}`);
@@ -157,24 +150,5 @@ export class ArticlesService {
       data: articles,
       meta: { limit, page, totalPage },
     };
-  }
-
-  async getAndFilterCategories(categoryIds: string[]) {
-    const categories = await this.categoryModel.find({
-      _id: {
-        $in: categoryIds,
-      },
-    });
-
-    if (categories.length !== categoryIds.length) {
-      const notFoundIds = categoryIds.filter(
-        (id) => !categories.some((cat) => cat._id.equals(id)),
-      );
-      throw new DataNotFoundException(
-        'Categories',
-        'ids',
-        notFoundIds.join(', '),
-      );
-    }
   }
 }

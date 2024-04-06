@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
-import { ArticlesService } from './articles.service';
-import { ArticlesController } from './articles.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from 'src/users/schema/user.schema';
+import { CategoriesService } from 'src/categories/categories.service';
+import { UsersService } from 'src/users/users.service';
+import { ArticlesController } from './articles.controller';
+import { ArticlesService } from './articles.service';
 import { Article, ArticleSchema } from './schema/article.schema';
-import {
-  Category,
-  CategorySchema,
-} from 'src/categories/schema/category.schema';
+import { User, UserSchema } from 'src/users/schema/user.schema';
+import { Category, CategorySchema } from 'src/categories/schema/category.schema';
 
 @Module({
   imports: [
@@ -16,17 +15,21 @@ import {
         name: Article.name,
         schema: ArticleSchema,
       },
-      {
-        name: Category.name,
-        schema: CategorySchema,
-      },
+    ]),
+    MongooseModule.forFeature([
       {
         name: User.name,
         schema: UserSchema,
       },
     ]),
+    MongooseModule.forFeature([
+      {
+        name: Category.name,
+        schema: CategorySchema,
+      },
+    ]),
   ],
   controllers: [ArticlesController],
-  providers: [ArticlesService],
+  providers: [ArticlesService, UsersService, CategoriesService],
 })
 export class ArticlesModule {}

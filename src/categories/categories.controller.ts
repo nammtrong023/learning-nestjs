@@ -12,7 +12,8 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Pagination } from 'src/common/decorator/pagination';
 import { PaginationRequest } from 'src/common/validator/pagination-request';
-
+import { ApiTags } from '@nestjs/swagger';
+@ApiTags('Categories')
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}

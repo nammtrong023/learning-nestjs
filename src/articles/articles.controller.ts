@@ -13,7 +13,9 @@ import { UpdateArticleDto } from './dto/update-article.dto';
 import { Pagination } from 'src/common/decorator/pagination';
 import { GetCurrentUserId } from 'src/common/decorator/get-current-user-id';
 import { PaginationRequest } from 'src/types';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Articles')
 @Controller('articles')
 export class ArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}

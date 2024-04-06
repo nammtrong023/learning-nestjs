@@ -44,6 +44,25 @@ export class CategoriesService {
     };
   }
 
+  async filterCategoryIds(categoryIds: string[]): Promise<void> {
+    const categories = await this.categoryModel.find({
+      _id: {
+        $in: categoryIds,
+      },
+    });
+
+    if (categories.length !== categoryIds.length) {
+      const notFoundIds = categoryIds.filter(
+        (id) => !categories.some((cat) => cat._id.equals(id)),
+      );
+      throw new DataNotFoundException(
+        'Categories',
+        'ids',
+        notFoundIds.join(', '),
+      );
+    }
+  }
+
   async findOne(id: string) {
     const category = await this.categoryModel.findById(id);
     if (!category) throw new DataNotFoundException('Category', 'id', id);
@@ -61,7 +80,20 @@ export class CategoriesService {
     return category;
   }
 
-  async remove(id: string) {
+  async updateMany(articleId: string, categoryIds: string[]): Promise<void> {
+    await this.categoryModel.updateMany(
+      {
+        _id: { $in: categoryIds },
+      },
+      {
+        $push: {
+          article: articleId,
+        },
+      },
+    );
+  }
+
+  async remove(id: string): Promise<void> {
     const category = await this.categoryModel.findByIdAndDelete(id);
     if (!category) throw new DataNotFoundException('Category', 'id', id);
   }
