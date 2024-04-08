@@ -1,18 +1,18 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
-import { InjectModel } from '@nestjs/mongoose';
 import { Article } from './schema/article.schema';
 import { Model } from 'mongoose';
 import { PaginationRequest, PaginationResponse } from 'src/types';
 import { DataNotFoundException } from 'src/exception/data-not-found';
 import { UsersService } from 'src/users/users.service';
 import { CategoriesService } from 'src/categories/categories.service';
+import { InjectArticleModel } from 'src/common/decorator/inject-model.decorator';
 
 @Injectable()
 export class ArticlesService {
   constructor(
-    @InjectModel(Article.name) private articleModel: Model<Article>,
+    @InjectArticleModel() private articleModel: Model<Article>,
     private userSerive: UsersService,
     private categoriesService: CategoriesService,
   ) {}

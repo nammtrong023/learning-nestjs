@@ -3,15 +3,13 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Model } from 'mongoose';
 import { Category } from './schema/category.schema';
-import { InjectModel } from '@nestjs/mongoose';
 import { PaginationRequest } from 'src/types';
 import { DataNotFoundException } from 'src/exception/data-not-found';
+import { InjectCategoryModel } from 'src/common/decorator/inject-model.decorator';
 
 @Injectable()
 export class CategoriesService {
-  constructor(
-    @InjectModel(Category.name) private categoryModel: Model<Category>,
-  ) {}
+  constructor(@InjectCategoryModel() private categoryModel: Model<Category>) {}
 
   async create(createCategoryDto: CreateCategoryDto) {
     const category = new this.categoryModel(createCategoryDto);

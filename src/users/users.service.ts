@@ -1,15 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schema/user.schema';
 import { Model } from 'mongoose';
 import { DataNotFoundException } from 'src/exception/data-not-found';
 import { UserResponseDto } from './dto/user-response.dto';
+import { InjectUserModel } from 'src/common/decorator/inject-model.decorator';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
-
+  constructor(@InjectUserModel() private userModel: Model<User>) {}
   async findAll(): Promise<UserResponseDto[]> {
     const users = await this.userModel.find({}, { password: 0 });
 

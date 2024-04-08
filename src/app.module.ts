@@ -9,15 +9,24 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AtGuard } from './common/guard/at.guard';
+import { UploadDataModule } from './upload-data/upload-data.module';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
+    BullModule.forRoot({
+      connection: {
+        host: 'localhost',
+        port: 6379,
+      },
+    }),
     ConfigModule.forRoot(),
     MongooseModule.forRoot(process.env.DB_URL),
     UsersModule,
     ArticlesModule,
     CategoriesModule,
     AuthModule,
+    UploadDataModule,
   ],
   controllers: [AppController],
   providers: [

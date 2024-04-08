@@ -10,7 +10,7 @@ import {
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { Pagination } from 'src/common/decorator/pagination';
+import { Pagination } from 'src/common/decorator/pagination.decorator';
 import { PaginationRequest } from 'src/common/validator/pagination-request';
 import { ApiTags } from '@nestjs/swagger';
 @ApiTags('Categories')

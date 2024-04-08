@@ -8,17 +8,16 @@ import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
 import { RegisterDto } from './dto/register.dto';
 import { Tokens } from 'src/types';
-import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from 'src/users/schema/user.schema';
 import { LoginDto } from './dto/login.dto';
 import { DataNotFoundException } from 'src/exception/data-not-found';
+import { InjectUserModel } from 'src/common/decorator/inject-model.decorator';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name)
-    private userModel: Model<User>,
+    @InjectUserModel() private userModel: Model<User>,
     private jwtService: JwtService,
     private config: ConfigService,
   ) {}
