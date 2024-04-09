@@ -4,9 +4,10 @@ import { AuthService } from './auth.service';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/users/schema/user.schema';
-import { ConfigService } from '@nestjs/config';
 import { AtStrategy } from './stragegies/at.stragegy';
 import { RtStrategy } from './stragegies/rt.stragegy';
+import { ProducerService } from 'src/queues/producer.service';
+import { QueueModule } from 'src/queues/queue.module';
 
 @Module({
   imports: [
@@ -17,8 +18,9 @@ import { RtStrategy } from './stragegies/rt.stragegy';
         schema: UserSchema,
       },
     ]),
+    QueueModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, ConfigService, JwtService, AtStrategy, RtStrategy],
+  providers: [AuthService, JwtService, AtStrategy, RtStrategy, ProducerService],
 })
 export class AuthModule {}

@@ -13,11 +13,13 @@ import { User } from 'src/users/schema/user.schema';
 import { LoginDto } from './dto/login.dto';
 import { DataNotFoundException } from 'src/exception/data-not-found';
 import { InjectUserModel } from 'src/common/decorator/inject-model.decorator';
+import { ProducerService } from 'src/queues/producer.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectUserModel() private userModel: Model<User>,
+    private producerService: ProducerService,
     private jwtService: JwtService,
     private config: ConfigService,
   ) {}
@@ -37,7 +39,16 @@ export class AuthService {
       password: hashedPassword,
     });
     newUser.save();
-    return new HttpException('User created successfully', 201);
+
+    const emailData = {
+      email: newUser.email,
+      subject: 'Welcome to Our Community',
+      html: `<p>Hi ${newUser.username},</p>
+      <p>Your account is now active.</p>`,
+    };
+
+    await this.producerService.addToEmailQueue(emailData);
+    return new HttpException('An email has been sent', 201);
   }
 
   async login(data: LoginDto): Promise<Tokens> {
