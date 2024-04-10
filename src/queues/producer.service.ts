@@ -1,32 +1,42 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import amqp, { ChannelWrapper } from 'amqp-connection-manager';
 import { Channel } from 'amqplib';
-import { EMAIL_QUEUE } from 'src/common/constants/blog.constant';
+import {
+  EMAIL_QUEUE,
+  IMPORT_ARTICLES_QUEUE,
+} from 'src/common/constants/blog.constant';
 import { MQ_CONNECTION } from 'src/config/connection-config';
+import { QueueConfig } from 'src/types';
 
 @Injectable()
 export class ProducerService {
   private channelWrapper: ChannelWrapper;
+  private readonly queues: QueueConfig[] = [
+    { name: EMAIL_QUEUE, options: { durable: true } },
+    { name: IMPORT_ARTICLES_QUEUE, options: { durable: true } },
+  ];
   constructor() {
     const connection = amqp.connect([MQ_CONNECTION]);
     this.channelWrapper = connection.createChannel({
-      setup: (channel: Channel) => {
-        return channel.assertQueue(EMAIL_QUEUE, { durable: true });
+      setup: async (channel: Channel) => {
+        for (const queue of this.queues) {
+          await channel.assertQueue(queue.name, queue.options);
+        }
       },
     });
   }
 
-  async addToEmailQueue(mail: any) {
+  async addToQueue(queueName: string, content: any) {
     try {
       await this.channelWrapper.sendToQueue(
-        EMAIL_QUEUE,
-        Buffer.from(JSON.stringify(mail)),
+        queueName,
+        Buffer.from(JSON.stringify(content)),
         { persistent: true },
       );
       Logger.log('Sent To Queue');
     } catch (error) {
       throw new HttpException(
-        'Error adding mail to queue',
+        'Error sending to queue',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

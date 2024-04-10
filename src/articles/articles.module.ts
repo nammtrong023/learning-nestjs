@@ -6,7 +6,11 @@ import { ArticlesController } from './articles.controller';
 import { ArticlesService } from './articles.service';
 import { Article, ArticleSchema } from './schema/article.schema';
 import { User, UserSchema } from 'src/users/schema/user.schema';
-import { Category, CategorySchema } from 'src/categories/schema/category.schema';
+import {
+  Category,
+  CategorySchema,
+} from 'src/categories/schema/category.schema';
+import { ProducerService } from 'src/queues/producer.service';
 
 @Module({
   imports: [
@@ -30,6 +34,11 @@ import { Category, CategorySchema } from 'src/categories/schema/category.schema'
     ]),
   ],
   controllers: [ArticlesController],
-  providers: [ArticlesService, UsersService, CategoriesService],
+  providers: [
+    ArticlesService,
+    UsersService,
+    CategoriesService,
+    ProducerService,
+  ],
 })
 export class ArticlesModule {}

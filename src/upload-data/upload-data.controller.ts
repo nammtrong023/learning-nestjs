@@ -12,7 +12,6 @@ import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { storageConfig } from 'src/config/store-config';
 import { FileUploadDto } from './dto/file-upload.dto';
-import { Public } from 'src/common/decorator/public.decorator';
 import { readFile, utils } from 'xlsx';
 import { InjectImportArticlesQueue } from 'src/common/decorator/inject-queue.decorator';
 import { IMPORT_ARTICLES } from 'src/common/constants/blog.constant';
@@ -23,7 +22,6 @@ export class UploadDataController {
   constructor(@InjectImportArticlesQueue() private queue: Queue) {}
 
   @Post()
-  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiConsumes('multipart/form-data')
   @ApiBody({

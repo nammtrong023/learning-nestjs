@@ -7,7 +7,6 @@ import { User, UserSchema } from 'src/users/schema/user.schema';
 import { AtStrategy } from './stragegies/at.stragegy';
 import { RtStrategy } from './stragegies/rt.stragegy';
 import { ProducerService } from 'src/queues/producer.service';
-import { QueueModule } from 'src/queues/queue.module';
 
 @Module({
   imports: [
@@ -18,7 +17,6 @@ import { QueueModule } from 'src/queues/queue.module';
         schema: UserSchema,
       },
     ]),
-    QueueModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtService, AtStrategy, RtStrategy, ProducerService],

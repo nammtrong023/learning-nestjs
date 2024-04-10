@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { Article } from './schema/article.schema';
@@ -8,6 +8,7 @@ import { DataNotFoundException } from 'src/exception/data-not-found';
 import { UsersService } from 'src/users/users.service';
 import { CategoriesService } from 'src/categories/categories.service';
 import { InjectArticleModel } from 'src/common/decorator/inject-model.decorator';
+import { ArticleImportDto } from 'src/upload-data/dto/article-import.dto';
 
 @Injectable()
 export class ArticlesService {
@@ -113,6 +114,23 @@ export class ArticlesService {
     });
 
     return article;
+  }
+
+  async insertMany(data: ArticleImportDto[]) {
+    try {
+      const newData = data.map((item) => {
+        const categoryIdsArray = item.categoryIds
+          .split(',')
+          .map((id) => id.trim());
+        return {
+          ...item,
+          categories: categoryIdsArray,
+        };
+      });
+      return await this.articleModel.insertMany(newData);
+    } catch (error) {
+      throw new HttpException('Error import articles data', 500);
+    }
   }
 
   async remove(id: string, userId: string) {

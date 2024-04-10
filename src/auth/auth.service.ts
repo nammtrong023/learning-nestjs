@@ -14,6 +14,7 @@ import { LoginDto } from './dto/login.dto';
 import { DataNotFoundException } from 'src/exception/data-not-found';
 import { InjectUserModel } from 'src/common/decorator/inject-model.decorator';
 import { ProducerService } from 'src/queues/producer.service';
+import { EMAIL_QUEUE } from 'src/common/constants/blog.constant';
 
 @Injectable()
 export class AuthService {
@@ -47,7 +48,7 @@ export class AuthService {
       <p>Your account is now active.</p>`,
     };
 
-    await this.producerService.addToEmailQueue(emailData);
+    await this.producerService.addToQueue(EMAIL_QUEUE, emailData);
     return new HttpException('An email has been sent', 201);
   }
 

@@ -12,6 +12,7 @@ import { AtGuard } from './common/guard/at.guard';
 import { UploadDataModule } from './upload-data/upload-data.module';
 import { BullModule } from '@nestjs/bullmq';
 import { EmailModule } from './email/email.module';
+import { QueueModule } from './queues/queue.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { EmailModule } from './email/email.module';
     AuthModule,
     UploadDataModule,
     EmailModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [

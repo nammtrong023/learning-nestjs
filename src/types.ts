@@ -32,3 +32,8 @@ export type PaginationResponse<T> = {
     totalPage: number;
   };
 };
+
+export interface QueueConfig {
+  name: string;
+  options: any;
+}
